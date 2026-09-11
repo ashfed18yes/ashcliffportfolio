@@ -36722,13 +36722,29 @@ class eM extends Ai {
   startLoading() {
     for (const t of this.sources)
       t.type === "gltfModel"
-        ? this.loaders.gltfLoader.load(t.path, (n) => {
-            this.sourceLoaded(t, n);
-          })
+        ? this.loaders.gltfLoader.load(
+            t.path,
+            (n) => {
+              this.sourceLoaded(t, n);
+            },
+            undefined,
+            (err) => {
+              console.warn("Failed model:", t.path, err);
+              this.sourceLoaded(t, null);
+            }
+          )
         : t.type === "texture" &&
-          this.loaders.textureLoader.load(t.path, (n) => {
-            this.sourceLoaded(t, n), (n.encoding = Ge), this.textures.push(n);
-          });
+          this.loaders.textureLoader.load(
+            t.path,
+            (n) => {
+              this.sourceLoaded(t, n), (n.encoding = Ge), this.textures.push(n);
+            },
+            undefined,
+            (err) => {
+              console.warn("Failed texture:", t.path, err);
+              this.sourceLoaded(t, null);
+            }
+          );
   }
   sourceLoaded(t, n) {
     (this.items[t.name] = n),
@@ -36744,7 +36760,11 @@ class eM extends Ai {
   }
   initTextures() {
     this.textures.forEach((t) => {
-      this.experience.renderer.instance.initTexture(t);
+      if (t) {
+        try {
+          this.experience.renderer.instance.initTexture(t);
+        } catch (e) {}
+      }
     });
   }
 }
@@ -37500,7 +37520,7 @@ class rM {
       backButton: document.getElementById("work-back-button"),
       nextButton: document.getElementById("work-next-button"),
     });
-    he(this, "currentItemIndex", 2);
+    he(this, "currentItemIndex", 4);
     he(this, "itemsAreMoving", !0);
     (this.experience = new ye()),
       (this.gestures = this.experience.gestures),
@@ -37516,7 +37536,7 @@ class rM {
       this.sizes.on("landscape", () => this.onOrientationChange());
   }
   onOrientationChange() {
-    (this.currentItemIndex = 2), this.updatePositions();
+    (this.currentItemIndex = 4), this.updatePositions();
   }
   addButtonEventListeners() {
     this.domElements.backButton.addEventListener("click", () => {
@@ -37553,7 +37573,7 @@ class rM {
       (e == "right" ? this.moveForward() : this.moveBack());
   }
   moveBack() {
-    this.currentItemIndex != 4 &&
+    this.currentItemIndex < 4 &&
       !this.itemsAreMoving &&
       document
         .getElementById("work-item-0")
@@ -37561,7 +37581,8 @@ class rM {
       (this.currentItemIndex++, this.updatePositions());
   }
   moveForward() {
-    this.currentItemIndex != 0 &&
+    const minIndex = 4 - (this.render.items.length - 1);
+    this.currentItemIndex > minIndex &&
       !this.itemsAreMoving &&
       document
         .getElementById("work-item-0")
@@ -37580,31 +37601,34 @@ class rM {
     (!this.itemsAreMoving || e) &&
       (this.render.items.forEach((t) => {
         const n = this.render.items.indexOf(t);
-        (document.getElementById("work-item-" + t.id).style =
-          this.positionStyles[n + this.currentItemIndex]),
-          n + this.currentItemIndex != 4
-            ? document
-                .getElementById("work-item-" + t.id)
-                .classList.add("work-inactive-item-container")
-            : document
-                .getElementById("work-item-" + t.id)
-                .classList.remove("work-inactive-item-container");
+        const offset = n + this.currentItemIndex - 4;
+        const transform = offset === 0
+          ? "transform: translateX(0%);"
+          : "transform: translateX(" + (offset * 110) + "%) scale(0.9);";
+        const el = document.getElementById("work-item-" + t.id);
+        if (el) {
+          el.style = transform;
+          offset !== 0
+            ? el.classList.add("work-inactive-item-container")
+            : el.classList.remove("work-inactive-item-container");
+        }
       }),
       (this.itemsAreMoving = !0),
       P.delayedCall(0.5, () => (this.itemsAreMoving = !1)),
       this.updateNavigation());
   }
   updateNavigation() {
-    this.currentItemIndex == 0
+    const minIndex = 4 - (this.render.items.length - 1);
+    this.currentItemIndex <= minIndex
       ? (this.domElements.nextButton.classList.add(
           "work-disabled-navigation-button"
         ),
-        this.experience.ui.hoverIcon.setupDefault())
-      : this.currentItemIndex == 4
+        this.experience.ui.hoverIcon && this.experience.ui.hoverIcon.setupDefault())
+      : this.currentItemIndex >= 4
       ? (this.domElements.backButton.classList.add(
           "work-disabled-navigation-button"
         ),
-        this.experience.ui.hoverIcon.setupDefault())
+        this.experience.ui.hoverIcon && this.experience.ui.hoverIcon.setupDefault())
       : (this.domElements.nextButton.classList.remove(
           "work-disabled-navigation-button"
         ),
@@ -37616,73 +37640,103 @@ class rM {
 const oM = [
     {
       id: 0,
-      name: "the iqic",
-      description: "Delivered a professional freelance project for a quality inspection company, creating a comprehensive business website",
-      image: "images/projects/theiqic.jpeg",
-      tags: ["javascript", "html", "css", "freelance"],
-      liveview: "https://theiqic.com/",
-      // github: "https://github.com/satvik9373/coffee-website-.git",
-      alt: "Coffee Shop Website",
+      name: "Event Expense Management App",
+      description: "Built a mobile application with Firebase real-time data sync for event expense tracking and financial transparency at JECRC Incubation Centre.",
+      image: "images/projects/krushigram.png",
+      tags: ["android", "kotlin", "firebase", "mobile"],
+      liveview: "https://github.com/ashfed18yes",
+      alt: "Event Expense Management App",
     },
     {
       id: 1,
-      name: "venchers campaign",
-      description: "a block-based photo sharing system inspired by the historic Million Dollar Homepage concept",
-      image: "images/projects/krushigram.png",
-      tags: ["react", "express", "multer", "googleAuth","Cloudinery"],
-      liveview: "https://venchers-campaign.vercel.app/",
-      alt: "venchers campaign",
+      name: "Balaji Tiles",
+      description: "A business website developed for Balaji Tiles to establish and present its digital presence.",
+      image: "images/projects/theiqic.jpeg",
+      tags: ["webdev", "frontend", "business"],
+      liveview: "https://balajitiles.com/",
+      alt: "Balaji Tiles Website",
     },
     {
       id: 2,
-      name: "vapor ui",
-      description: "UI component library featuring 20+ reusable components, text animations, background animations, loading page elements, and interactive UI element ",
-      image: "images/projects/vaporui.jpeg",
-      tags: ["javascript", "react", "ui","framer"],
-      liveview: "https://vapor-ui.vercel.app/",
-      // github: "https://github.com/satvik9373/yoga-class.git",
-      alt: "Fitness Institute",
+      name: "Pooja Speech & Hearing Clinic",
+      description: "A professional website developed for Pooja Speech & Hearing Clinic to present its services and online presence.",
+      image: "images/projects/marketing-agency.png",
+      tags: ["webdev", "frontend", "healthcare"],
+      liveview: "https://poojaspeechandhearing.in/",
+      alt: "Pooja Speech & Hearing Clinic",
     },
     {
       id: 3,
-      name: "Quick Labs",
-      description: "Quick labs is an LMS developed for teaching assistants at my university to provide lab solutions, manage materials, and support students.",
-      image: "images/projects/studybuddy.jpeg",
-      tags: ["javascript", "react", "mongodb", ""],
-      liveview: "http://quicklabs.fun/",
-      // github: "https://github.com/satvik9373/Think-Beyond-Marketing",
-      alt: "Digital Marketing Agency",
+      name: "JIC Foundation",
+      description: "A website developed for JIC Foundation to showcase its initiatives and online presence.",
+      image: "images/projects/projecthub.png",
+      tags: ["webdev", "frontend", "organization"],
+      liveview: "https://jicfoundation.co.in/",
+      alt: "JIC Foundation Website",
     },
     {
       id: 4,
-      name: "Open Talk",
-      description: "Open Talk is a platform where people can share their achievements and hacks, allowing others to like or dislike them without needing an account.",
+      name: "RKK Constructions",
+      description: "A professional website developed for RKK Constructions.",
+      image: "images/projects/coffee.jpg",
+      tags: ["webdev", "frontend", "business"],
+      liveview: "https://rkkconstructions.com/",
+      alt: "RKK Constructions Website",
+    },
+    {
+      id: 5,
+      name: "JECRC Entrepreneur Challenge",
+      description: "A website developed for the JECRC Entrepreneur Challenge to support its digital presence and event communication.",
+      image: "images/projects/randomizer.jpg",
+      tags: ["webdev", "event"],
+      liveview: "https://jecrentrepreneurchallenge.co.in/",
+      alt: "JECRC Entrepreneur Challenge Website",
+    },
+    {
+      id: 6,
+      name: "Prozify",
+      description: "A web project developed as part of my freelance and digital development work.",
+      image: "images/projects/vaporui.jpeg",
+      tags: ["webdev", "digital"],
+      liveview: "https://prozify.com/",
+      alt: "Prozify Digital Platform",
+    },
+    {
+      id: 7,
+      name: "Truetalk",
+      description: "A website I worked on during my Web Developer Internship at Truetalk, contributing to a mental health platform connecting users with therapists.",
+      image: "images/projects/studybuddy.jpeg",
+      tags: ["webdev", "internship"],
+      liveview: "https://truetalk.co.in/",
+      alt: "Truetalk Website",
+    },
+    {
+      id: 8,
+      name: "Aryan Tech",
+      description: "A web development project created as part of my practical development work.",
       image: "images/projects/opentalk.jpeg",
-      tags: ["react", "mongodb", "express"],
-      liveview: "https://opentalk1.netlify.app/",
-      // github: "https://github.com/satvik9373/lms-websitee",
-      alt: "Affiliate Marketing and earning Website",
+      tags: ["webdev", "frontend"],
+      liveview: "https://aryantech.vercel.app/",
+      alt: "Aryan Tech Website",
     },
   ],
   aM = {
+    android: '<div class="work-item-tag" style="background: #3DDC84; color: #000; font-weight: 600;">Android</div>',
+    kotlin: '<div class="work-item-tag" style="background: #7F52FF;">Kotlin</div>',
+    firebase: '<div class="work-item-tag" style="background: #FFCA28; color: #000; font-weight: 600;">Firebase</div>',
+    mobile: '<div class="work-item-tag" style="background: #21BAEB;">Mobile Dev</div>',
+    webdev: '<div class="work-item-tag" style="background: #21BAEB;">Web Development</div>',
+    frontend: '<div class="work-item-tag" style="background: #FF923E;">Frontend</div>',
+    business: '<div class="work-item-tag" style="background: #2d88dd;">Business Website</div>',
+    healthcare: '<div class="work-item-tag" style="background: #4fe461;">Healthcare</div>',
+    organization: '<div class="work-item-tag" style="background: #9b59b6;">Organization</div>',
+    event: '<div class="work-item-tag" style="background: #e86ef0;">Event Platform</div>',
+    digital: '<div class="work-item-tag" style="background: #34bfff;">Digital Platform</div>',
+    internship: '<div class="work-item-tag" style="background: #00c9a7;">Internship</div>',
     html: '<div class="work-item-tag" style="background: white; border: 1px solid #7C8594; color: #7C8594">HTML</div>',
     css: '<div class="work-item-tag" style="background: white; border: 1px solid #7C8594; color: #7C8594">CSS</div>',
-    javascript:
-      '<div class="work-item-tag" style="background: #FFB800;">JavaScript</div>',
-    react:
-      '<div class="work-item-tag" style="background: #21BAEB;">React js</div>',
-    mongodb:'<div class="work-item-tag" style="background: #4fe461;">MongoDB</div>',
-    googleAuth:'<div class="work-item-tag" style="background: #4fe461;">Google Auth</div>',
-    express:
-      '<div class="work-item-tag" style="background: #333;">Express</div>',
-    multer:
-      '<div class="work-item-tag" style="background:rgb(187, 93, 93);">Multer</div>',
-      Cloudinery: '<div class="work-item-tag" style="background:rgb(73, 143, 248);">Cloudinery</div>',
-      freelance: '<div class="work-item-tag" style="background:rgb(73, 143, 248);">Freelancs</div>',
-    ui: '<div class="work-item-tag" style="background: #CA49F8;">UI Design</div>',
-    tailwind: '<div class="work-item-tag" style="background:rgb(234, 248, 73);">Tailwind</div>',
-    game: '<div class="work-item-tag" style="background: #e86ef0;">Game</div>',
-    framer: '<div class="work-item-tag" style="background: #e86ef0;">Framer</div>',
+    javascript: '<div class="work-item-tag" style="background: #FFB800;">JavaScript</div>',
+    react: '<div class="work-item-tag" style="background: #21BAEB;">React</div>',
   };
 class lM {
   constructor() {
@@ -37871,24 +37925,24 @@ class lM {
 }
 const cM = [
   {
-    name: "web development",
-    width: "90%",
+    name: "Web Development",
+    width: "88%",
   },
   {
-    name: "app devlopment",
-    width: "55%",
+    name: "Backend & Java",
+    width: "82%",
   },
   {
-    name: "graphic design",
-    width: "90%",
+    name: "Mobile & Android",
+    width: "78%",
   },
   {
-    name: "frontend",
+    name: "Core CS & DSA",
     width: "80%",
   },
   {
-    name: "backend",
-    width: "75%",
+    name: "Creative & Digital",
+    width: "85%",
   },
 ];
 class hM {
@@ -39724,97 +39778,45 @@ class bM {
             }),
         }),
         new Ln({
-          element: this.domElements.cards[2],
+          element: this.domElements.cards[2] || this.domElements.cards[0],
           direction: "down",
           f: () => {
-            P.to(this.domElements.cards[0], {
-              y: 0,
-              opacity: 1,
-              duration: 0.85,
-            }),
-              P.to(this.domElements.cards[1], {
+            const total = this.domElements.cards.length;
+            this.domElements.cards.forEach((card, i) => {
+              P.to(card, {
                 y: 0,
                 opacity: 1,
-                duration: 0.75,
-              }),
-              P.to(this.domElements.cards[2], {
-                y: 0,
-                opacity: 1,
-                duration: 0.65,
-              }),
-              P.to(this.domElements.cards[3], {
-                y: 0,
-                opacity: 1,
-                duration: 0.75,
-              }),
-              P.to(this.domElements.cards[4], {
-                y: 0,
-                opacity: 1,
-                duration: 0.85,
-                onComplete: () => {
+                duration: 0.65 + Math.min(i, 4) * 0.05,
+                onComplete: i === total - 1 ? () => {
                   P.delayedCall(0.2, () => {
                     this.addTransitionClass(!0), (this.played = !0);
                   });
-                },
+                } : undefined,
               });
+            });
           },
           setup: () => {
-            this.addTransitionClass(!1),
-              P.to(this.domElements.cards[0], {
-                y: 100,
-                opacity: 0,
-                duration: 0,
-              }),
-              P.to(this.domElements.cards[1], {
-                y: 100,
-                opacity: 0,
-                duration: 0,
-              }),
-              P.to(this.domElements.cards[2], {
-                y: 100,
-                opacity: 0,
-                duration: 0,
-              }),
-              P.to(this.domElements.cards[3], {
-                y: 100,
-                opacity: 0,
-                duration: 0,
-              }),
-              P.to(this.domElements.cards[4], {
+            this.addTransitionClass(!1);
+            this.domElements.cards.forEach((card) => {
+              P.to(card, {
                 y: 100,
                 opacity: 0,
                 duration: 0,
               });
+            });
           },
           reset: () => {
-            P.to(this.domElements.cards[0], {
-              y: 0,
-              opacity: 1,
-              duration: 0,
-            }),
-              P.to(this.domElements.cards[1], {
+            const total = this.domElements.cards.length;
+            this.domElements.cards.forEach((card, i) => {
+              P.to(card, {
                 y: 0,
                 opacity: 1,
                 duration: 0,
-              }),
-              P.to(this.domElements.cards[2], {
-                y: 0,
-                opacity: 1,
-                duration: 0,
-              }),
-              P.to(this.domElements.cards[3], {
-                y: 0,
-                opacity: 1,
-                duration: 0,
-              }),
-              P.to(this.domElements.cards[4], {
-                y: 0,
-                opacity: 1,
-                duration: 0,
-                onComplete: () => {
+                onComplete: i === total - 1 ? () => {
                   this.addTransitionClass(!0), (this.played = !0);
-                },
+                } : undefined,
               });
+            });
           },
         }),
       ]);
@@ -39882,6 +39884,7 @@ class MM {
           (this.about.render = new hM()),
           (this.about.animations = new mM()),
           (this.about.scrollLines = new wM()),
+          (this.hoverIcon = new uM()),
           (this.work = {}),
           (this.work.render = new lM()),
           (this.work.cards = new rM()),
@@ -39889,8 +39892,7 @@ class MM {
           (this.contact = {}),
           (this.contact.form = new yM()),
           (this.contact.animationEvents = new xM()),
-          (this.header = new dM()),
-          (this.hoverIcon = new uM());
+          (this.header = new dM());
       }),
       (this.intro = new vM());
   }
