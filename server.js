@@ -127,17 +127,21 @@ function serveFile(filePath, req, res, stats) {
   }
 }
 
-server.listen(PORT, () => {
-  console.log(`\n🚀 3D Portfolio server running at:`);
-  console.log(`   > Local:   http://localhost:${PORT}/\n`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`\n🚀 3D Portfolio server running at:`);
+    console.log(`   > Local:   http://localhost:${PORT}/\n`);
+  });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    const nextPort = Number(PORT) + 1;
-    console.log(`Port ${PORT} in use, trying ${nextPort}...`);
-    server.listen(nextPort);
-  } else {
-    console.error('Server error:', err);
-  }
-});
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      const nextPort = Number(PORT) + 1;
+      console.log(`Port ${PORT} in use, trying ${nextPort}...`);
+      server.listen(nextPort);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+}
+
+module.exports = server;
