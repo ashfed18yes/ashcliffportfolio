@@ -39293,6 +39293,7 @@ class yM {
   }
   addSubmitButtonEventListener() {
     this.domElements.submitButton.addEventListener("click", () => {
+      if (this.isSubmitting) return;
       this.sounds.play("buttonClick"),
         this.hideAllErrors(),
         this.checkNameInput();
@@ -39321,32 +39322,42 @@ class yM {
   }
   checkNameInput() {
     const e = this.fields[0];
-    e.input.value.length >= 4 ? this.checkEmailInput() : this.showError(e);
+    e.input.value.trim().length > 0 ? this.checkEmailInput() : this.showError(e);
   }
   checkEmailInput() {
     const e = this.fields[1];
-    /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(e.input.value)
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.input.value.trim())
       ? this.checkMessageInput()
       : this.showError(e);
   }
   checkMessageInput() {
     const e = this.fields[2];
-    e.input.value.length >= 10 ? this.sendMail() : this.showError(e);
+    e.input.value.trim().length > 0 ? this.sendMail() : this.showError(e);
   }
   async sendMail() {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
     this.showContainer("loading");
-    const e = await fetch("/api/contact", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: this.fields[0].input.value,
-        email: this.fields[1].input.value,
-        message: this.fields[2].input.value,
-      }),
-    });
-    this.showResult(e);
+    try {
+      const e = await fetch("https://formspree.io/f/mwlkzybz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name: this.fields[0].input.value.trim(),
+          email: this.fields[1].input.value.trim(),
+          _replyto: this.fields[1].input.value.trim(),
+          message: this.fields[2].input.value.trim(),
+        }),
+      });
+      this.showResult(e);
+    } catch (t) {
+      this.showResult({ status: 500 });
+    } finally {
+      this.isSubmitting = false;
+    }
   }
   hideAllContainers() {
     this.domElements.formContainer.classList.add("hide"),
@@ -39372,8 +39383,8 @@ class yM {
     this.showContainer("result"),
       (this.domElements.resultMessage.innerHTML =
         t == 2
-          ? "<h4>Your message has been sent.</h4><span>I'll get back to you as soon as possible.</span>"
-          : "<h4>Oops. An error occurred.</h4><span>Please try again.</span>"),
+          ? "<h4>Message sent successfully!</h4><span>I'll get back to you as soon as possible.</span>"
+          : "<h4>Something went wrong.</h4><span>Please try again.</span>"),
       (this.domElements.resultButton.innerHTML =
         t == 2 ? "Cool!" : "Try again"),
       t == 2 ? this.showSuccessIcon() : this.showErrorIcon();
